@@ -8,8 +8,8 @@ add_executable(${PROJECT_NAME} src/main.cpp)
 target_include_directories(${PROJECT_NAME} PUBLIC dependencies/glfw/include/)
 target_link_libraries(${PROJECT_NAME} glfw)
 
-if(MSVC)
-    message(STATUS "Generating build files specifically for msvc.")
+if(WIN32)
+    message(STATUS "Generating build files specifically for windows.")
 
     message(STATUS "Attempting to locate Vulkan SDK using manual path...")
 	set(VULKAN_SDK "C:/VulkanSDK")
@@ -25,7 +25,7 @@ if(MSVC)
 
     target_include_directories(${PROJECT_NAME} PUBLIC ${VULKAN_PATH}/Include)
     link_libraries(${VULKAN_PATH}/Bin ${VULKAN_PATH}/Lib)
-endif(MSVC)
+endif(WIN32)
 if (UNIX)
     message(STATUS "Generating build files specifically for gcc.")
 

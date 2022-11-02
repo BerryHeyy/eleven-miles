@@ -8,53 +8,45 @@
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
-class HelloTriangleApplication {
-public:
-    void run() {
-        initWindow();
-        initVulkan();
-        mainLoop();
-        cleanup();
+GLFWwindow* window;
+
+void init_window()
+{
+    glfwInit();
+
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+
+    window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
+}
+
+void init_vulkan()
+{
+
+}
+
+void start_main_loop()
+{
+    while (!glfwWindowShouldClose(window)) 
+    {
+        glfwPollEvents();
     }
+}
 
-private:
-    GLFWwindow* window;
+void cleanup() 
+{
+    glfwDestroyWindow(window);
 
-    void initWindow() {
-        glfwInit();
+    glfwTerminate();
+}
 
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+int main()
+{
+    init_window();
+    init_vulkan();
 
-        window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
-    }
+    start_main_loop();
 
-    void initVulkan() {
-
-    }
-
-    void mainLoop() {
-        while (!glfwWindowShouldClose(window)) {
-            glfwPollEvents();
-        }
-    }
-
-    void cleanup() {
-        glfwDestroyWindow(window);
-
-        glfwTerminate();
-    }
-};
-
-int main() {
-    HelloTriangleApplication app;
-
-    try {
-        app.run();
-    } catch (const std::exception& e) {
-        std::cerr << e.what() << std::endl;
-        return EXIT_FAILURE;
-    }
-
-    return EXIT_SUCCESS;
+    cleanup();
+    return 0;
 }
