@@ -24,7 +24,7 @@ if(WIN32)
     endif()
 
     target_include_directories(${PROJECT_NAME} PUBLIC ${VULKAN_PATH}/Include)
-    link_libraries(${VULKAN_PATH}/Bin ${VULKAN_PATH}/Lib)
+    target_link_libraries(${PROJECT_NAME} ${VULKAN_PATH}/Lib/vulkan-1.lib)
 endif(WIN32)
 if (UNIX)
     message(STATUS "Generating build files specifically for gcc.")
