@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <vector>
+#include <optional>
 
 const std::vector<const char*> validation_layers = {
     "VK_LAYER_KHRONOS_validation"
@@ -63,6 +64,36 @@ void init_window()
     window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
 }
 
+struct QueueFamilyIndices 
+{
+    std::optional<uint32_t> graphics_family;
+};
+
+QueueFamilyIndices find_queue_families(VkPhysicalDevice device)
+{
+    QueueFamilyIndices indices;
+
+    uint32_t queue_family_count = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, nullptr);
+
+    std::vector<VkQueueFamilyProperties> queue_families(queue_family_count);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, queue_families.data());
+
+    // Check if at least one queue family exists that supports VK_QUEUE_GRAPHICS_BIT
+    int i = 0;
+    for (VkQueueFamilyProperties queue_family : queue_families) //TODO: implement an early exit.
+    {
+        if (queue_family.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+        {
+            indices.graphics_family = i;
+        }
+
+        i++;
+    }
+
+    return indices;
+}
+
 bool is_device_suitable(VkPhysicalDevice device)
 {
     VkPhysicalDeviceProperties device_properties;
@@ -71,7 +102,9 @@ bool is_device_suitable(VkPhysicalDevice device)
     VkPhysicalDeviceFeatures device_features;
     vkGetPhysicalDeviceFeatures(device, &device_features);
 
-    return true; // Any gpu will do.
+    QueueFamilyIndices indices = find_queue_families(device);
+
+    return indices.graphics_family.has_value(); // Gpu needs to have graphics queue family.
 }
 
 void pick_physical_device()
