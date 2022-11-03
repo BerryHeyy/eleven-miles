@@ -38,6 +38,9 @@ VkQueue graphics_queue;
 VkQueue present_queue;
 
 VkSwapchainKHR swap_chain;
+std::vector<VkImage> swap_chain_images;
+VkFormat swap_chain_image_format;
+VkExtent2D swap_chain_extent;
 
 struct QueueFamilyIndices 
 {
@@ -442,6 +445,15 @@ void create_swap_chain()
     {
         throw std::runtime_error("Failed to create swap chain!");
     }
+
+    // Get swap chain image handles
+    vkGetSwapchainImagesKHR(device, swap_chain, &swap_chain_image_count, nullptr);
+    swap_chain_images.resize(swap_chain_image_count);
+    vkGetSwapchainImagesKHR(device, swap_chain, &swap_chain_image_count, swap_chain_images.data());
+
+    // Store data for future use
+    swap_chain_image_format = surface_format.format;
+    swap_chain_extent = extent;
 }
 
 void init_vulkan()
