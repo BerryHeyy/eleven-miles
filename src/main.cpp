@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <vector>
+#include <set>
 #include <optional>
 
 const std::vector<const char*> validation_layers = {
@@ -23,10 +24,12 @@ const uint32_t HEIGHT = 600;
 
 GLFWwindow* window;
 VkInstance vk_instance;
+VkSurfaceKHR surface;
 VkPhysicalDevice physical_device = VK_NULL_HANDLE;
 VkDevice device;
 
 VkQueue graphics_queue;
+VkQueue present_queue;
 
 bool check_validation_layer_support()
 {
@@ -70,6 +73,7 @@ void init_window()
 struct QueueFamilyIndices 
 {
     std::optional<uint32_t> graphics_family;
+    std::optional<uint32_t> present_family;
 };
 
 QueueFamilyIndices find_queue_families(VkPhysicalDevice device)
@@ -91,6 +95,13 @@ QueueFamilyIndices find_queue_families(VkPhysicalDevice device)
             indices.graphics_family = i;
         }
 
+        VkBool32 presentSupport = false;
+        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+        if (presentSupport) 
+        {
+            indices.present_family = i;
+        }
+
         i++;
     }
 
@@ -107,7 +118,8 @@ bool is_device_suitable(VkPhysicalDevice device)
 
     QueueFamilyIndices indices = find_queue_families(device);
 
-    return indices.graphics_family.has_value(); // Gpu needs to have graphics queue family.
+    return indices.graphics_family.has_value() && // Gpu needs to have graphics queue family.
+        indices.present_family.has_value(); // Gpu needs to have present queue family.
 }
 
 void pick_physical_device()
@@ -142,12 +154,19 @@ void create_logical_device()
 {
     QueueFamilyIndices indices = find_queue_families(physical_device);
 
-    VkDeviceQueueCreateInfo queue_create_info {};
-    queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    queue_create_info.queueFamilyIndex = indices.graphics_family.value();
-    queue_create_info.queueCount = 1;
+    std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
+    std::set<uint32_t> unique_queue_families = {indices.graphics_family.value(), indices.present_family.value()};
+
     float queue_priority = 1.0f;
-    queue_create_info.pQueuePriorities = &queue_priority;
+    for (uint32_t queue_family : unique_queue_families)
+    {
+        VkDeviceQueueCreateInfo queue_create_info {};
+        queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queue_create_info.queueFamilyIndex = queue_family;
+        queue_create_info.queueCount = 1;
+        queue_create_info.pQueuePriorities = &queue_priority;
+        queue_create_infos.push_back(queue_create_info);
+    }
 
     // Specify features
     VkPhysicalDeviceFeatures device_features {};
@@ -156,8 +175,8 @@ void create_logical_device()
     VkDeviceCreateInfo create_info {};
     create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 
-    create_info.pQueueCreateInfos = &queue_create_info;
-    create_info.queueCreateInfoCount = 1;
+    create_info.queueCreateInfoCount = static_cast<uint32_t>(queue_create_infos.size());
+    create_info.pQueueCreateInfos = queue_create_infos.data();
 
     create_info.pEnabledFeatures = &device_features;
 
@@ -179,6 +198,7 @@ void create_logical_device()
     }
 
     vkGetDeviceQueue(device, indices.graphics_family.value(), 0, &graphics_queue);
+    vkGetDeviceQueue(device, indices.present_family.value(), 0, &present_queue);
 }
 
 void create_vulkan_instance()
@@ -223,7 +243,15 @@ void create_vulkan_instance()
     // Create instance
     if (vkCreateInstance(&createInfo, nullptr, &vk_instance) != VK_SUCCESS)
     {
-        throw std::runtime_error("Failed to create Vulkan instance");
+        throw std::runtime_error("Failed to create Vulkan instance.");
+    }
+}
+
+void create_surface()
+{
+    if (glfwCreateWindowSurface(vk_instance, window, nullptr, &surface) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create window surface.");
     }
 }
 
@@ -231,6 +259,7 @@ void init_vulkan()
 {
     create_vulkan_instance();
     // setupDebugMessenger();
+    create_surface();
     pick_physical_device();
     create_logical_device();
 }
@@ -246,6 +275,7 @@ void start_main_loop()
 void cleanup() 
 {
     vkDestroyDevice(device, nullptr);
+    vkDestroySurfaceKHR(vk_instance, surface, nullptr);
     vkDestroyInstance(vk_instance, nullptr);
 
     glfwDestroyWindow(window);
