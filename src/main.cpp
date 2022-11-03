@@ -13,6 +13,10 @@ const std::vector<const char*> validation_layers = {
     "VK_LAYER_KHRONOS_validation"
 };
 
+const std::vector<const char*> device_extensions = {
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME
+};
+
 #ifdef NDEBUG
     const bool enable_validation_layers = false;
 #else
@@ -58,6 +62,23 @@ bool check_validation_layer_support()
     }
 
     return true;
+}
+
+bool check_device_extension_support(VkPhysicalDevice device)
+{
+    uint32_t extension_count;
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extension_count, nullptr);
+
+    std::vector<VkExtensionProperties> available_extensions(extension_count);
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extension_count, available_extensions.data());
+
+    std::set<std::string> required_extensions(device_extensions.begin(), device_extensions.end());
+
+    for (VkExtensionProperties extension : available_extensions) {
+        required_extensions.erase(extension.extensionName);
+    }
+
+    return required_extensions.empty();
 }
 
 void init_window()
@@ -118,7 +139,10 @@ bool is_device_suitable(VkPhysicalDevice device)
 
     QueueFamilyIndices indices = find_queue_families(device);
 
-    return indices.graphics_family.has_value() && // Gpu needs to have graphics queue family.
+    bool extensions_supported = check_device_extension_support(device);
+
+    return extensions_supported && // Gpu needs to support extensions
+        indices.graphics_family.has_value() && // Gpu needs to have graphics queue family.
         indices.present_family.has_value(); // Gpu needs to have present queue family.
 }
 
@@ -180,7 +204,9 @@ void create_logical_device()
 
     create_info.pEnabledFeatures = &device_features;
 
-    create_info.enabledExtensionCount = 0;
+    // Enable device extensions
+    create_info.enabledExtensionCount = static_cast<uint32_t>(device_extensions.size());
+    create_info.ppEnabledExtensionNames = device_extensions.data();
 
     if (enable_validation_layers)
     {
@@ -208,17 +234,17 @@ void create_vulkan_instance()
         throw std::runtime_error("One or more requested validation layers do not exist.");
     }
 
-    VkApplicationInfo appInfo {};
-    appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    appInfo.pApplicationName = "Eleven Miles";
-    appInfo.applicationVersion = VK_MAKE_VERSION(0, 1, 0);
-    appInfo.pEngineName = "No Engine";
-    appInfo.engineVersion = VK_MAKE_VERSION(0, 0, 0);
-    appInfo.apiVersion = VK_API_VERSION_1_0;
+    VkApplicationInfo app_info {};
+    app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+    app_info.pApplicationName = "Eleven Miles";
+    app_info.applicationVersion = VK_MAKE_VERSION(0, 1, 0);
+    app_info.pEngineName = "No Engine";
+    app_info.engineVersion = VK_MAKE_VERSION(0, 0, 0);
+    app_info.apiVersion = VK_API_VERSION_1_0;
 
-    VkInstanceCreateInfo createInfo {};
-    createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    createInfo.pApplicationInfo = &appInfo;
+    VkInstanceCreateInfo create_info {};
+    create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    create_info.pApplicationInfo = &app_info;
 
     // Setup extensions from the built in glfw function
     uint32_t glfwExtensionCount = 0;
@@ -226,22 +252,22 @@ void create_vulkan_instance()
 
     glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
-    createInfo.enabledExtensionCount = glfwExtensionCount;
-    createInfo.ppEnabledExtensionNames = glfwExtensions;
+    create_info.enabledExtensionCount = glfwExtensionCount;
+    create_info.ppEnabledExtensionNames = glfwExtensions;
 
     // Setup validation layers
     if (enable_validation_layers)
     {
-        createInfo.enabledLayerCount = static_cast<uint32_t>(validation_layers.size());
-        createInfo.ppEnabledLayerNames = validation_layers.data();
+        create_info.enabledLayerCount = static_cast<uint32_t>(validation_layers.size());
+        create_info.ppEnabledLayerNames = validation_layers.data();
     }
     else
     {
-        createInfo.enabledLayerCount = 0;
+        create_info.enabledLayerCount = 0;
     }
 
     // Create instance
-    if (vkCreateInstance(&createInfo, nullptr, &vk_instance) != VK_SUCCESS)
+    if (vkCreateInstance(&create_info, nullptr, &vk_instance) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create Vulkan instance.");
     }
