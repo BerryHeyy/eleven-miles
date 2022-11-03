@@ -35,6 +35,19 @@ VkDevice device;
 VkQueue graphics_queue;
 VkQueue present_queue;
 
+struct QueueFamilyIndices 
+{
+    std::optional<uint32_t> graphics_family;
+    std::optional<uint32_t> present_family;
+};
+
+struct SwapChainSupportDetails
+{
+    VkSurfaceCapabilitiesKHR capabilites;
+    std::vector<VkSurfaceFormatKHR> formats;
+    std::vector<VkPresentModeKHR> present_modes;
+};
+
 bool check_validation_layer_support()
 {
     // Get available validation layers.
@@ -91,12 +104,6 @@ void init_window()
     window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
 }
 
-struct QueueFamilyIndices 
-{
-    std::optional<uint32_t> graphics_family;
-    std::optional<uint32_t> present_family;
-};
-
 QueueFamilyIndices find_queue_families(VkPhysicalDevice device)
 {
     QueueFamilyIndices indices;
@@ -129,6 +136,36 @@ QueueFamilyIndices find_queue_families(VkPhysicalDevice device)
     return indices;
 }
 
+SwapChainSupportDetails query_swap_chain_support(VkPhysicalDevice device)
+{
+    SwapChainSupportDetails details;
+
+    // Query basic capabilities
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilites);
+
+    // Query supported surface formats
+    uint32_t format_count;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &format_count, nullptr);
+
+    if (format_count != 0)
+    {
+        details.formats.resize(format_count);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &format_count, details.formats.data());
+    }
+
+    // Query supported presentation modes
+    uint32_t present_mode_count;
+    vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &present_mode_count, nullptr);
+
+    if (present_mode_count != 0)
+    {
+        details.present_modes.resize(present_mode_count);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &present_mode_count, details.present_modes.data());
+    }
+
+    return details;
+}
+
 bool is_device_suitable(VkPhysicalDevice device)
 {
     VkPhysicalDeviceProperties device_properties;
@@ -137,11 +174,24 @@ bool is_device_suitable(VkPhysicalDevice device)
     VkPhysicalDeviceFeatures device_features;
     vkGetPhysicalDeviceFeatures(device, &device_features);
 
+    // Get the queue indices
     QueueFamilyIndices indices = find_queue_families(device);
 
+    // Check if the required extensions are supported by the physical device (gpu)
     bool extensions_supported = check_device_extension_support(device);
 
+    // Check if swapchain supported by the physcial device is adequate for our needs
+    bool swap_chain_adequate = false;
+    if (extensions_supported)
+    {
+        SwapChainSupportDetails swap_chain_support_details = query_swap_chain_support(device);
+
+        swap_chain_adequate = !swap_chain_support_details.formats.empty() &&
+            !swap_chain_support_details.present_modes.empty();
+    }
+
     return extensions_supported && // Gpu needs to support extensions
+        swap_chain_adequate &&
         indices.graphics_family.has_value() && // Gpu needs to have graphics queue family.
         indices.present_family.has_value(); // Gpu needs to have present queue family.
 }
