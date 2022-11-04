@@ -1,4 +1,4 @@
-#define GLFW_INCLUDE_VULKAN
+#include <vulkan/vulkan.hpp>
 #include <GLFW/glfw3.h>
 
 #include <iostream>
@@ -43,6 +43,17 @@ std::vector<VkImageView> swap_chain_image_views;
 VkFormat swap_chain_image_format;
 VkExtent2D swap_chain_extent;
 
+void init_window()
+{
+    glfwInit();
+
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+
+    window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
+}
+
+/* #region Vulkan Initialization Functions */
 
 struct QueueFamilyIndices 
 {
@@ -90,7 +101,7 @@ bool check_device_extension_support(VkPhysicalDevice device)
 {
     uint32_t extension_count;
     vkEnumerateDeviceExtensionProperties(device, nullptr, &extension_count, nullptr);
-
+    
     std::vector<VkExtensionProperties> available_extensions(extension_count);
     vkEnumerateDeviceExtensionProperties(device, nullptr, &extension_count, available_extensions.data());
 
@@ -101,16 +112,6 @@ bool check_device_extension_support(VkPhysicalDevice device)
     }
 
     return required_extensions.empty();
-}
-
-void init_window()
-{
-    glfwInit();
-
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-
-    window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
 }
 
 QueueFamilyIndices find_queue_families(VkPhysicalDevice device)
@@ -487,6 +488,8 @@ void create_image_views()
         }
     }
 }
+
+/* #endregion */
 
 void init_vulkan()
 {

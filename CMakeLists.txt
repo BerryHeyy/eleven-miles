@@ -2,10 +2,12 @@ cmake_minimum_required (VERSION 3.12)
 
 project (eleven-miles)
 
+set(DCMAKE_BUILD_TYPE "Debug")
+
 add_subdirectory(dependencies/glfw/)
 
-add_executable(${PROJECT_NAME} src/main.cpp)
-target_include_directories(${PROJECT_NAME} PUBLIC dependencies/glfw/include/)
+add_executable(${PROJECT_NAME} src/eleven-miles.cpp)
+target_include_directories(${PROJECT_NAME} PRIVATE dependencies/glfw/include/)
 target_link_libraries(${PROJECT_NAME} glfw)
 
 if(WIN32)
@@ -23,8 +25,9 @@ if(WIN32)
         return()
     endif()
 
-    target_include_directories(${PROJECT_NAME} PUBLIC ${VULKAN_PATH}/Include)
+    target_include_directories(${PROJECT_NAME} PRIVATE ${VULKAN_PATH}/Include)
     target_link_libraries(${PROJECT_NAME} ${VULKAN_PATH}/Lib/vulkan-1.lib)
+    #link_libraries(${VULKAN_PATH}/Lib ${VULKAN_PATH}/Bin)
 endif(WIN32)
 if (UNIX)
     message(STATUS "Generating build files specifically for gcc.")
