@@ -50,4 +50,13 @@ endif(WIN32)
 if (UNIX)
     message(STATUS "Generating build files specifically for linux.")
 
+    target_link_libraries(${PROJECT_NAME} vulkan)
+
+    if(NOT EXISTS "${CMAKE_BINARY_DIR}/shaders")
+        message(STATUS "Creating symlink for shaders.")
+
+        execute_process(
+            COMMAND ln -s ${CMAKE_SOURCE_DIR}/shaders ${CMAKE_BINARY_DIR}/shaders
+        )
+    endif()
 endif(UNIX)

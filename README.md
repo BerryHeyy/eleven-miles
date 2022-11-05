@@ -4,18 +4,22 @@ This is a (relatively) simple project I decided to do in order to learn about th
 
 ## Installation
 
-First of all, clone this repository somewhere on your computer. After cloning, go into the `shader` directory and compile the shaders by running the correct script for your operating system (`.sh` for Linux and `.bat` for Windows).
+First of all, clone this repository somewhere on your computer.
 
 ### Windows
 
 - Download and install the [Vulkan SDK](https://vulkan.lunarg.com/). (Preferably the same version used in the project, currently version 1.3.231.1. You could probably use more recent versions.)
 - Change the `VULKAN_SDK` variable in the CMakeLists file to where you've installed the SDK. Also change the `VULKAN_VERSION` variable if you've chosen to go for a more recent version.
 - Configure the CMake project and build it.
+- Go to the `shaders` directory and run the `compile.bat` script to compile the shaders.
 - The executable should be located in the `build` folder.
 
 ### Linux
 
-- Coming soon.
+The following instructions apply to Arch Linux. Other distributions have different names for the packages.
+
+- Install the following packages from pacman: `vulkan-devel shaderc`. `vulkan-devel` contains everything needed for vulkan development, including Vulkan headers and the library required for linking. The `shaderc` package contains the `glslc` binary used to compile GLSL code into SPIR-V bytecode.
+- Go to the `shaders` directory and run the `compile.sh` script to compile the shaders. If permission is denied, open a terminal, change directories to the `shader` directory, and run `sh compile.sh`.
 
 ### MacOS
 
