@@ -11,6 +11,8 @@
 #include <limits>
 #include <algorithm>
 
+#include "util.hpp"
+
 const std::vector<const char*> validation_layers = {
     "VK_LAYER_KHRONOS_validation"
 };
@@ -491,6 +493,52 @@ void create_image_views()
 
 /* #endregion */
 
+/* #region Graphics Pipeline */
+
+VkShaderModule create_shader_module(const std::vector<char>& code)
+{
+    VkShaderModuleCreateInfo create_info {};
+    create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    create_info.codeSize = code.size();
+    create_info.pCode = reinterpret_cast<const uint32_t*>(code.data());
+
+    VkShaderModule shader_module;
+    if (vkCreateShaderModule(device, &create_info, nullptr, &shader_module) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create shader module!");
+    }
+
+    return shader_module;
+}
+
+void create_graphics_pipeline()
+{
+    std::vector<char> vert_shader_code = em_util::read_file("shaders/vert.spv");
+    std::vector<char> frag_shader_code = em_util::read_file("shaders/frag.spv");
+
+    VkShaderModule vert_shader_module = create_shader_module(vert_shader_code);
+    VkShaderModule frag_shader_module = create_shader_module(frag_shader_code);
+
+    // Make shader stages
+    VkPipelineShaderStageCreateInfo vert_shader_stage_info{};
+    vert_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    vert_shader_stage_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
+    vert_shader_stage_info.module = vert_shader_module;
+    vert_shader_stage_info.pName = "main";
+
+    VkPipelineShaderStageCreateInfo frag_shader_stage_info{};
+    frag_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    frag_shader_stage_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    frag_shader_stage_info.module = frag_shader_module;
+    frag_shader_stage_info.pName = "main";
+
+    VkPipelineShaderStageCreateInfo shader_stages[] = {vert_shader_stage_info, frag_shader_stage_info};
+
+    vkDestroyShaderModule(device, frag_shader_module, nullptr);
+    vkDestroyShaderModule(device, vert_shader_module, nullptr);
+}
+
+/* #endregion */
+
 void init_vulkan()
 {
     create_vulkan_instance();
@@ -500,6 +548,8 @@ void init_vulkan()
     create_logical_device();
     create_swap_chain();
     create_image_views();
+    
+    create_graphics_pipeline();
 }
 
 void start_main_loop()

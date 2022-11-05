@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.12)
+cmake_minimum_required (VERSION 3.14)
 
 project (eleven-miles)
 
@@ -6,13 +6,30 @@ set(DCMAKE_BUILD_TYPE "Debug")
 
 add_subdirectory(dependencies/glfw/)
 
-add_executable(${PROJECT_NAME} src/eleven-miles.cpp)
+set(EM_SOURCES
+    eleven-miles.cpp
+    util.hpp
+    util.cpp
+)
+
+list(TRANSFORM EM_SOURCES PREPEND "src/")
+
+add_executable(${PROJECT_NAME} ${EM_SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE dependencies/glfw/include/)
 target_link_libraries(${PROJECT_NAME} glfw)
 
+# add_custom_command(
+#     TARGET ${PROJECT_NAME} POST_BUILD
+#     COMMAND ${CMAKE_COMMAND} -E copy_directory
+#             ${CMAKE_SOURCE_DIR}/shaders
+#             ${CMAKE_BINARY_DIR}/shaders
+# )
+
+
+
 if(WIN32)
     message(STATUS "Generating build files specifically for windows.")
-
+    
     message(STATUS "Attempting to locate Vulkan SDK using manual path...")
 	set(VULKAN_SDK "C:/VulkanSDK")
 	set(VULKAN_VERSION "1.3.231.1")
@@ -28,6 +45,17 @@ if(WIN32)
     target_include_directories(${PROJECT_NAME} PRIVATE ${VULKAN_PATH}/Include)
     target_link_libraries(${PROJECT_NAME} ${VULKAN_PATH}/Lib/vulkan-1.lib)
     #link_libraries(${VULKAN_PATH}/Lib ${VULKAN_PATH}/Bin)
+
+    if(NOT EXISTS "${CMAKE_BINARY_DIR}/shaders")
+        message(STATUS "Creating symlink for shaders.")
+
+        file(TO_NATIVE_PATH "${CMAKE_BINARY_DIR}/shaders" SYM_SHADER_LINK)
+        file(TO_NATIVE_PATH "${CMAKE_SOURCE_DIR}/shaders" SYM_SHADER_TARGET)
+    
+        execute_process(
+            COMMAND cmd.exe /c mklink /J "${SYM_SHADER_LINK}" "${SYM_SHADER_TARGET}"
+        )
+    endif()
 endif(WIN32)
 if (UNIX)
     message(STATUS "Generating build files specifically for gcc.")
