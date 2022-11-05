@@ -923,6 +923,8 @@ void start_main_loop()
         glfwPollEvents();
         draw_frame();
     }
+
+    vkDeviceWaitIdle(device);
 }
 
 void cleanup() 
