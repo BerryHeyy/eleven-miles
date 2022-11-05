@@ -1,13 +1,13 @@
 cmake_minimum_required (VERSION 3.14)
 
-project (eleven-miles)
+project (vulkan-triangle)
 
 set(DCMAKE_BUILD_TYPE "Debug")
 
 add_subdirectory(dependencies/glfw/)
 
 set(EM_SOURCES
-    eleven-miles.cpp
+    vulkan-triangle.cpp
     util.hpp
     util.cpp
 )
@@ -17,15 +17,6 @@ list(TRANSFORM EM_SOURCES PREPEND "src/")
 add_executable(${PROJECT_NAME} ${EM_SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE dependencies/glfw/include/)
 target_link_libraries(${PROJECT_NAME} glfw)
-
-# add_custom_command(
-#     TARGET ${PROJECT_NAME} POST_BUILD
-#     COMMAND ${CMAKE_COMMAND} -E copy_directory
-#             ${CMAKE_SOURCE_DIR}/shaders
-#             ${CMAKE_BINARY_DIR}/shaders
-# )
-
-
 
 if(WIN32)
     message(STATUS "Generating build files specifically for windows.")
@@ -44,7 +35,6 @@ if(WIN32)
 
     target_include_directories(${PROJECT_NAME} PRIVATE ${VULKAN_PATH}/Include)
     target_link_libraries(${PROJECT_NAME} ${VULKAN_PATH}/Lib/vulkan-1.lib)
-    #link_libraries(${VULKAN_PATH}/Lib ${VULKAN_PATH}/Bin)
 
     if(NOT EXISTS "${CMAKE_BINARY_DIR}/shaders")
         message(STATUS "Creating symlink for shaders.")
@@ -58,7 +48,6 @@ if(WIN32)
     endif()
 endif(WIN32)
 if (UNIX)
-    message(STATUS "Generating build files specifically for gcc.")
-
+    message(STATUS "Generating build files specifically for linux.")
 
 endif(UNIX)
