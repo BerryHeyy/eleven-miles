@@ -49,6 +49,8 @@ VkRenderPass render_pass;
 VkPipelineLayout pipeline_layout;
 VkPipeline graphics_pipeline;
 
+std::vector<VkFramebuffer> swap_chain_framebuffers;
+
 void init_window()
 {
     glfwInit();
@@ -699,6 +701,35 @@ void create_render_pass()
 
 /* #endregion */
 
+/* #region Framebuffers */
+
+void create_framebuffers()
+{
+    swap_chain_framebuffers.resize(swap_chain_image_views.size());
+
+    for (size_t i = 0; i < swap_chain_image_views.size(); i++)
+    {
+        VkImageView attachments[] = {
+            swap_chain_image_views[i]
+        };
+
+        VkFramebufferCreateInfo framebuffer_info {};
+        framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebuffer_info.renderPass = render_pass;
+        framebuffer_info.attachmentCount = 1;
+        framebuffer_info.pAttachments = attachments;
+        framebuffer_info.width = swap_chain_extent.width;
+        framebuffer_info.height = swap_chain_extent.height;
+        framebuffer_info.layers = 1;
+
+        if (vkCreateFramebuffer(device, &framebuffer_info, nullptr, &swap_chain_framebuffers[i]) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to create framebuffer!");
+        }
+    }
+}
+
+/* #endregion */
+
 void init_vulkan()
 {
     create_vulkan_instance();
@@ -711,6 +742,8 @@ void init_vulkan()
     
     create_render_pass();
     create_graphics_pipeline();
+
+    create_framebuffers();
 }
 
 void start_main_loop()
@@ -723,6 +756,10 @@ void start_main_loop()
 
 void cleanup() 
 {
+    for (VkFramebuffer framebuffer : swap_chain_framebuffers)
+    {
+        vkDestroyFramebuffer(device, framebuffer, nullptr);
+    }
     vkDestroyPipeline(device, graphics_pipeline, nullptr);
     vkDestroyPipelineLayout(device, pipeline_layout, nullptr);
     vkDestroyRenderPass(device, render_pass, nullptr);
