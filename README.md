@@ -18,9 +18,13 @@ First of all, clone this repository somewhere on your computer.
 
 The following instructions apply to Arch Linux. Other distributions have different names for the packages.
 
-- Install the following packages from pacman: `vulkan-devel shaderc`. `vulkan-devel` contains everything needed for vulkan development, including Vulkan headers and the library required for linking. The `shaderc` package contains the `glslc` binary used to compile GLSL code into SPIR-V bytecode.
+- Install the following packages from pacman: `vulkan-devel shaderc`. (`vulkan-devel` contains everything needed for vulkan development, including Vulkan headers and the library required for linking. The `shaderc` package contains the `glslc` binary used to compile GLSL code into SPIR-V bytecode.)
 - Go to the `shaders` directory and run the `compile.sh` script to compile the shaders. If permission is denied, open a terminal, change directories to the `shader` directory, and run `sh compile.sh`.
 
 ### MacOS
 
 - I'm not planning on adding MacOS support.
+
+## Developer Notes
+
+- As you might have noticed, the window is not resizable. This is because I haven't implemented the code to resize the viewport and framebuffers. This also causes tiling window managers to render the window as floating.
