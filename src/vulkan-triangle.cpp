@@ -31,7 +31,7 @@ const std::vector<const char*> device_extensions = {
 #endif
 
 const uint32_t WIDTH = 800;
-const uint32_t HEIGHT = 600;
+const uint32_t HEIGHT = 800;
 
 GLFWwindow* window;
 VkInstance vk_instance;
@@ -61,14 +61,18 @@ std::vector<VkSemaphore> image_available_semaphores;
 std::vector<VkSemaphore> render_finished_semaphores;
 std::vector<VkFence>  in_flight_fences;
 
+bool framebuffer_resized = false;
+
 void init_window()
 {
     glfwInit();
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
     window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
+    glfwSetFramebufferSizeCallback(window, [](GLFWwindow* window, int width, int height) {
+        framebuffer_resized = true;
+    });
 }
 
 /* #region Vulkan Initialization Functions */
@@ -837,6 +841,32 @@ void create_command_buffers()
 
 /* #endregion */
 
+void cleanup_swap_chain()
+{
+    for (VkFramebuffer framebuffer : swap_chain_framebuffers)
+    {
+        vkDestroyFramebuffer(device, framebuffer, nullptr);
+    }
+
+    for (VkImageView image_view : swap_chain_image_views)
+    {
+        vkDestroyImageView(device, image_view, nullptr);
+    }
+
+    vkDestroySwapchainKHR(device, swap_chain, nullptr);
+}
+
+void recreate_swap_chain()
+{
+    vkDeviceWaitIdle(device);
+
+    cleanup_swap_chain();
+
+    create_swap_chain();
+    create_image_views();
+    create_framebuffers();
+}
+
 void create_sync_objects()
 {
     image_available_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
@@ -864,10 +894,21 @@ void create_sync_objects()
 void draw_frame()
 {
     vkWaitForFences(device, 1, &in_flight_fences[current_frame], VK_TRUE, UINT64_MAX);
-    vkResetFences(device, 1, &in_flight_fences[current_frame]);
 
     uint32_t image_index;
-    vkAcquireNextImageKHR(device, swap_chain, UINT64_MAX, image_available_semaphores[current_frame], VK_NULL_HANDLE, &image_index);
+    VkResult result = vkAcquireNextImageKHR(device, swap_chain, UINT64_MAX, image_available_semaphores[current_frame], VK_NULL_HANDLE, &image_index);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR)
+    {
+        recreate_swap_chain();
+        return;
+    }
+    else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+    {
+        throw std::runtime_error("Failed to acquire swap chain image!");
+    }
+
+    vkResetFences(device, 1, &in_flight_fences[current_frame]);
 
     vkResetCommandBuffer(command_buffers[current_frame], 0);
     record_command_buffer(command_buffers[current_frame], image_index);
@@ -905,7 +946,18 @@ void draw_frame()
     present_info.pImageIndices = &image_index;
     present_info.pResults = nullptr;
 
-    vkQueuePresentKHR(present_queue, &present_info);
+    result = vkQueuePresentKHR(present_queue, &present_info);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebuffer_resized)
+    {
+        framebuffer_resized = false;
+        recreate_swap_chain();
+    }
+    else if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to present swap chain image!");
+    }
+
     current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
@@ -943,6 +995,8 @@ void start_main_loop()
 
 void cleanup() 
 {
+    cleanup_swap_chain();
+
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
         vkDestroySemaphore(device, image_available_semaphores[i], nullptr);
@@ -951,18 +1005,11 @@ void cleanup()
     }
 
     vkDestroyCommandPool(device, command_pool, nullptr);
-    for (VkFramebuffer framebuffer : swap_chain_framebuffers)
-    {
-        vkDestroyFramebuffer(device, framebuffer, nullptr);
-    }
+    
     vkDestroyPipeline(device, graphics_pipeline, nullptr);
     vkDestroyPipelineLayout(device, pipeline_layout, nullptr);
     vkDestroyRenderPass(device, render_pass, nullptr);
-    for (VkImageView image_view : swap_chain_image_views)
-    {
-        vkDestroyImageView(device, image_view, nullptr);
-    }
-    vkDestroySwapchainKHR(device, swap_chain, nullptr);
+
     vkDestroyDevice(device, nullptr);
     vkDestroySurfaceKHR(vk_instance, surface, nullptr);
     vkDestroyInstance(vk_instance, nullptr);
