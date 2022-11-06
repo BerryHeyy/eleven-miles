@@ -858,6 +858,16 @@ void cleanup_swap_chain()
 
 void recreate_swap_chain()
 {
+    // Wait for minimization
+    int width = 0, height = 0;
+    glfwGetFramebufferSize(window, &width, &height);
+    while (width == 0 || height == 0)
+    {
+        glfwGetFramebufferSize(window, &width, &height);
+        glfwWaitEvents();
+    }
+
+    // Reset swap chain
     vkDeviceWaitIdle(device);
 
     cleanup_swap_chain();
